@@ -145,7 +145,7 @@ class _AdminCustomersPageState extends State<AdminCustomersPage> {
                   leading: CircleAvatar(
                     backgroundColor: Colors.blue[100],
                     child: Text(
-                      customer['full_name']?.substring(0, 1).toUpperCase() ?? '?',
+                      customer['name']?.substring(0, 1).toUpperCase() ?? '?',
                       style: const TextStyle(
                         color: Colors.blue,
                         fontWeight: FontWeight.bold,
@@ -153,7 +153,7 @@ class _AdminCustomersPageState extends State<AdminCustomersPage> {
                     ),
                   ),
                   title: Text(
-                    customer['full_name'] ?? 'Unknown',
+                    customer['name'] ?? 'Unknown',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Column(
@@ -216,7 +216,7 @@ class _CustomerDialogState extends State<CustomerDialog> {
   void initState() {
     super.initState();
     if (widget.customer != null) {
-      _fullNameController.text = widget.customer!['full_name'] ?? '';
+      _fullNameController.text = widget.customer!['name'] ?? '';
       _emailController.text = widget.customer!['email'] ?? '';
       _phoneController.text = widget.customer!['phone'] ?? '';
       _addressController.text = widget.customer!['address'] ?? '';
@@ -230,7 +230,7 @@ class _CustomerDialogState extends State<CustomerDialog> {
 
     try {
       final customerData = {
-        'full_name': _fullNameController.text,
+        'name': _fullNameController.text,
         'email': _emailController.text,
         'phone': _phoneController.text,
         'address': _addressController.text,

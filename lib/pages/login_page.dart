@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dashboard_page.dart';
 import 'register_page.dart';
+import 'admin_dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -30,11 +31,33 @@ class _LoginPageState extends State<LoginPage> {
       debugPrint('USER ID: ${res.user?.id}');
       debugPrint('SESSION: ${res.session}');
 
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const DashboardPage()),
-      );
+      if (res.user != null) {
+        // Fetch user role from customers table
+        final customerData = await supabase
+            .from('customers')
+            .select('role')
+            .eq('id', res.user!.id)
+            .single();
+
+        final userRole = customerData['role'] as String?;
+        debugPrint('USER ROLE: $userRole');
+
+        if (!mounted) return;
+
+        // Route based on user role
+        if (userRole == 'admin') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
+          );
+        } else {
+          // Default to user dashboard for 'user' role or null
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardPage()),
+          );
+        }
+      }
     } catch (e) {
       debugPrint('LOGIN ERROR: $e');
       ScaffoldMessenger.of(

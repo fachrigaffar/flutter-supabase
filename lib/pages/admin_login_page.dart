@@ -142,10 +142,18 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       );
 
       if (response.user != null) {
+        // Fetch user role from customers table
+        final customerData = await supabase
+            .from('customers')
+            .select('role')
+            .eq('id', response.user!.id)
+            .single();
+
+        final userRole = customerData['role'] as String?;
+
         if (_isAdminMode) {
-          // Check if user is admin (you might want to check a role field in your database)
-          // For now, we'll assume admin emails contain 'admin'
-          if (_emailController.text.contains('admin')) {
+          // Check if user has admin role
+          if (userRole == 'admin') {
             if (mounted) {
               Navigator.pushReplacementNamed(context, '/admin-dashboard');
             }

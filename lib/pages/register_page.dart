@@ -36,6 +36,7 @@ class _RegisterPageState extends State<RegisterPage> {
         'id': user.id,
         'name': nameController.text,
         'email': emailController.text,
+        'role': 'user', // Default role for new registrations
       });
 
       if (!mounted) return;

@@ -41,7 +41,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
             .single();
 
         setState(() {
-          _fullNameController.text = response['full_name'] ?? '';
+          _fullNameController.text = response['name'] ?? '';
           _emailController.text = response['email'] ?? '';
           _phoneController.text = response['phone'] ?? '';
           _addressController.text = response['address'] ?? '';
@@ -67,7 +67,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
       final user = supabase.auth.currentUser;
       if (user != null) {
         await supabase.from('customers').update({
-          'full_name': _fullNameController.text,
+          'name': _fullNameController.text,
           'email': _emailController.text,
           'phone': _phoneController.text,
           'address': _addressController.text,
