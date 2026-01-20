@@ -36,28 +36,6 @@ class CallCenterPage extends StatelessWidget {
               ),
             ),
           ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.phone, color: Colors.blue),
-              title: const Text('Technical Support'),
-              subtitle: const Text('+62 812-3456-7891'),
-              trailing: IconButton(
-                icon: const Icon(Icons.call),
-                onPressed: () => _makeCall('+6281234567891'),
-              ),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.phone, color: Colors.orange),
-              title: const Text('Sales'),
-              subtitle: const Text('+62 812-3456-7892'),
-              trailing: IconButton(
-                icon: const Icon(Icons.call),
-                onPressed: () => _makeCall('+6281234567892'),
-              ),
-            ),
-          ),
           const SizedBox(height: 20),
           const Text(
             'Jam Operasional:',

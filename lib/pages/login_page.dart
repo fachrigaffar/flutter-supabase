@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/auth_service.dart';
 import 'dashboard_page.dart';
 import 'register_page.dart';
 import 'admin_dashboard_page.dart';
@@ -13,11 +14,13 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final supabase = Supabase.instance.client;
+  final authService = AuthService();
 
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
   bool isLoading = false;
+  bool isGoogleLoading = false;
 
   Future<void> login() async {
     setState(() => isLoading = true);
@@ -68,6 +71,25 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> loginWithGoogle() async {
+    setState(() => isGoogleLoading = true);
+
+    try {
+      await authService.signInWithGoogle();
+      // Note: Supabase OAuth will open browser/webview for authentication
+      // The user will be redirected back to the app after successful login
+      // Auth state changes will be handled by the auth state listener
+    } catch (e) {
+      debugPrint('GOOGLE LOGIN ERROR: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google login gagal: $e')),
+        );
+        setState(() => isGoogleLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,6 +137,36 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 onPressed: isLoading ? null : login,
                 child: Text(isLoading ? 'Loading...' : 'Login'),
+              ),
+              const SizedBox(height: 16),
+              const Row(
+                children: [
+                  Expanded(child: Divider()),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('atau'),
+                  ),
+                  Expanded(child: Divider()),
+                ],
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.all(14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  side: const BorderSide(color: Colors.grey),
+                ),
+                onPressed: isGoogleLoading ? null : loginWithGoogle,
+                icon: isGoogleLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.g_mobiledata, color: Colors.red, size: 24),
+                label: Text(isGoogleLoading ? 'Signing in...' : 'Login dengan Google'),
               ),
               TextButton(
                 onPressed: () {

@@ -17,6 +17,96 @@ Future<void> main() async {
   runApp(MyApp());
 }
 
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  User? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _user = Supabase.instance.client.auth.currentUser;
+
+    // Listen for auth state changes
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      final AuthChangeEvent event = data.event;
+      final Session? session = data.session;
+
+      setState(() {
+        _user = session?.user;
+      });
+
+      if (event == AuthChangeEvent.signedIn && session?.user != null) {
+        // Handle user sign in - create customer record if needed
+        final supabase = Supabase.instance.client;
+        final user = session!.user;
+
+        try {
+          // Check if customer exists
+          final existingCustomer = await supabase
+              .from('customers')
+              .select('role')
+              .eq('id', user.id)
+              .maybeSingle();
+
+          if (existingCustomer == null) {
+            // Create new customer entry for OAuth user
+            await supabase.from('customers').insert({
+              'id': user.id,
+              'email': user.email,
+              'name': user.userMetadata?['full_name'] ?? user.userMetadata?['name'] ?? 'OAuth User',
+              'role': 'user', // Default role for OAuth users
+            });
+          }
+
+          if (mounted) {
+            // Navigate to appropriate dashboard
+            final customerData = await supabase
+                .from('customers')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+            final userRole = customerData['role'] as String?;
+
+            if (userRole == 'admin') {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
+              );
+            } else {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const DashboardPage()),
+              );
+            }
+          }
+        } catch (e) {
+          debugPrint('Error handling OAuth user: $e');
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_user != null) {
+      // User is signed in, show loading while determining role
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // User is not signed in, show login page
+    return const LoginPage();
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -28,7 +118,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: MaterialApp(
-        title: 'Flutter Demo',
+        title: 'BlangKis',
         theme: ThemeData(
           // This is the theme of your application.
           //

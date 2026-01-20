@@ -36,39 +36,6 @@ class LocationPage extends StatelessWidget {
               ),
             ),
           ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.location_on, color: Colors.blue),
-              title: const Text('Cabang Bandung'),
-              subtitle: const Text('Jl. Braga No. 45, Bandung'),
-              trailing: IconButton(
-                icon: const Icon(Icons.map),
-                onPressed: () => _openMaps('Jl.+Braga+No.+45,+Bandung'),
-              ),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.location_on, color: Colors.green),
-              title: const Text('Cabang Surabaya'),
-              subtitle: const Text('Jl. Tunjungan No. 67, Surabaya'),
-              trailing: IconButton(
-                icon: const Icon(Icons.map),
-                onPressed: () => _openMaps('Jl.+Tunjungan+No.+67,+Surabaya'),
-              ),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.location_on, color: Colors.orange),
-              title: const Text('Cabang Medan'),
-              subtitle: const Text('Jl. Ahmad Yani No. 89, Medan'),
-              trailing: IconButton(
-                icon: const Icon(Icons.map),
-                onPressed: () => _openMaps('Jl.+Ahmad+Yani+No.+89,+Medan'),
-              ),
-            ),
-          ),
           const SizedBox(height: 20),
           const Text(
             'Jam Operasional Toko:',
