@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_products_page.dart';
 import 'admin_customers_page.dart';
 import 'admin_reports_page.dart';
+import 'admin_orders_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -45,6 +46,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AdminProductsPage()),
+              );
+            },
+          ),
+          _buildMenuCard(
+            icon: Icons.assignment,
+            title: 'Kelola Pesanan',
+            color: Colors.red,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminOrdersPage()),
               );
             },
           ),

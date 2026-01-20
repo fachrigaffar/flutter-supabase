@@ -1,53 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
-class OrderHistoryPage extends StatefulWidget {
-  const OrderHistoryPage({super.key});
+class AdminOrdersPage extends StatefulWidget {
+  const AdminOrdersPage({super.key});
 
   @override
-  State<OrderHistoryPage> createState() => _OrderHistoryPageState();
+  State<AdminOrdersPage> createState() => _AdminOrdersPageState();
 }
 
-class _OrderHistoryPageState extends State<OrderHistoryPage> {
+class _AdminOrdersPageState extends State<AdminOrdersPage> {
   final supabase = Supabase.instance.client;
   late Future<List<dynamic>> ordersFuture;
 
   @override
   void initState() {
     super.initState();
-    ordersFuture = fetchOrders();
+    ordersFuture = fetchAllOrders();
   }
 
-  Future<List<dynamic>> fetchOrders() async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return [];
-
+  Future<List<dynamic>> fetchAllOrders() async {
     final response = await supabase
         .from('orders')
-        .select('*, order_items(*)')
-        .eq('customer_id', user.id)
+        .select('*, order_items(*), customers(*)')
         .order('created_at', ascending: false);
 
     return response as List<dynamic>;
   }
 
-  String _getStatusColor(String status) {
+  Future<void> updateOrderStatus(String orderId, String newStatus) async {
+    try {
+      await supabase
+          .from('orders')
+          .update({'status': newStatus})
+          .eq('id', int.parse(orderId));
+
+      setState(() {
+        ordersFuture = fetchAllOrders();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Status pesanan berhasil diubah ke $newStatus')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+  Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'orange';
+        return Colors.orange;
       case 'processing':
-        return 'blue';
+        return Colors.blue;
       case 'shipped':
-        return 'purple';
+        return Colors.purple;
       case 'complete':
-        return 'green';
+        return Colors.green;
       case 'cancelled':
-        return 'red';
+        return Colors.red;
       default:
-        return 'grey';
+        return Colors.grey;
     }
   }
 
@@ -55,7 +69,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Riwayat Belanja'),
+        title: const Text('Kelola Pesanan'),
       ),
       body: FutureBuilder<List<dynamic>>(
         future: ordersFuture,
@@ -84,7 +98,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Belum ada riwayat pembelian',
+                    'Belum ada pesanan',
                     style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
                 ],
@@ -98,6 +112,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             itemBuilder: (context, index) {
               final order = orders[index];
               final orderItems = order['order_items'] as List<dynamic>? ?? [];
+              final customer = order['customers'] as Map<String, dynamic>?;
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -119,21 +134,13 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: _getStatusColor(order['status'] ?? 'Unknown') == 'orange' ? Colors.orange[100] :
-                                     _getStatusColor(order['status'] ?? 'Unknown') == 'blue' ? Colors.blue[100] :
-                                     _getStatusColor(order['status'] ?? 'Unknown') == 'purple' ? Colors.purple[100] :
-                                     _getStatusColor(order['status'] ?? 'Unknown') == 'green' ? Colors.green[100] :
-                                     _getStatusColor(order['status'] ?? 'Unknown') == 'red' ? Colors.red[100] : Colors.grey[100],
+                              color: _getStatusColor(order['status'] ?? 'Unknown').withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               order['status'] ?? 'Unknown',
                               style: TextStyle(
-                                color: _getStatusColor(order['status'] ?? 'Unknown') == 'orange' ? Colors.orange[800] :
-                                       _getStatusColor(order['status'] ?? 'Unknown') == 'blue' ? Colors.blue[800] :
-                                       _getStatusColor(order['status'] ?? 'Unknown') == 'purple' ? Colors.purple[800] :
-                                       _getStatusColor(order['status'] ?? 'Unknown') == 'green' ? Colors.green[800] :
-                                       _getStatusColor(order['status'] ?? 'Unknown') == 'red' ? Colors.red[800] : Colors.grey[800],
+                                color: _getStatusColor(order['status'] ?? 'Unknown'),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -142,6 +149,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         ],
                       ),
                       const SizedBox(height: 8),
+                      Text(
+                        'Customer: ${customer?['full_name'] ?? 'Unknown'}',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
                       Text(
                         'Tanggal: ${_formatDate(order['created_at'])}',
                         style: TextStyle(color: Colors.grey[600]),
@@ -204,24 +215,80 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _printNota(order),
-                              icon: const Icon(Icons.print),
-                              label: const Text('Cetak NOTA'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (order['payment_proof_url'] != null)
+                          if (order['status'] == 'pending') ...[
                             Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => _viewPaymentProof(order['payment_proof_url']),
-                                icon: const Icon(Icons.image),
-                                label: const Text('Lihat Bukti'),
+                              child: ElevatedButton(
+                                onPressed: () => updateOrderStatus(order['id'].toString(), 'processing'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.check),
+                                    SizedBox(width: 8),
+                                    Text('Konfirmasi'),
+                                  ],
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 8),
+                          ],
+                          if (order['status'] == 'processing') ...[
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () => updateOrderStatus(order['id'].toString(), 'shipped'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.local_shipping),
+                                    SizedBox(width: 8),
+                                    Text('Kirim'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          if (order['status'] == 'shipped') ...[
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () => updateOrderStatus(order['id'].toString(), 'complete'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.purple,
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.done_all),
+                                    SizedBox(width: 8),
+                                    Text('Selesai'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _showStatusDialog(order),
+                              icon: const Icon(Icons.edit),
+                              label: const Text('Ubah Status'),
+                            ),
+                          ),
                         ],
                       ),
+                      if (order['payment_proof_url'] != null) ...[
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: () => _viewPaymentProof(order['payment_proof_url']),
+                          icon: const Icon(Icons.image),
+                          label: const Text('Lihat Bukti Pembayaran'),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -243,82 +310,60 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     }
   }
 
-  Future<void> _printNota(Map<String, dynamic> order) async {
-    final orderItems = order['order_items'] as List<dynamic>? ?? [];
-
-    final pdf = pw.Document();
-
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
+  void _showStatusDialog(Map<String, dynamic> order) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Ubah Status Pesanan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              pw.Center(
-                child: pw.Text(
-                  'NOTA PEMBELIAN',
-                  style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-                ),
+              ListTile(
+                title: const Text('Pending'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  updateOrderStatus(order['id'].toString(), 'pending');
+                },
               ),
-              pw.SizedBox(height: 20),
-              pw.Text('Order ID: #${order['id']}'),
-              pw.Text('Tanggal: ${_formatDate(order['created_at'])}'),
-              pw.Text('Status: ${order['status'] ?? 'Unknown'}'),
-              pw.SizedBox(height: 20),
-              pw.Text('Detail Pembelian:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 10),
-              pw.Table(
-                border: pw.TableBorder.all(),
-                children: [
-                  pw.TableRow(
-                    children: [
-                      pw.Text('Item', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text('Qty', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text('Harga', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text('Subtotal', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    ],
-                  ),
-                  ...orderItems.map((item) => pw.TableRow(
-                        children: [
-                          pw.Text(item['price'] ?? 'Unknown'),
-                          pw.Text('${item['quantity']}'),
-                          pw.Text('Rp ${item['price']}'),
-                          pw.Text('Rp ${item['subtotal']}'),
-                        ],
-                      )),
-                ],
+              ListTile(
+                title: const Text('Processing'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  updateOrderStatus(order['id'].toString(), 'processing');
+                },
               ),
-              pw.SizedBox(height: 20),
-              pw.Align(
-                alignment: pw.Alignment.centerRight,
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.end,
-                  children: [
-                    if (order['shipping_cost'] != null)
-                      pw.Text('Ongkos Kirim: Rp ${order['shipping_cost']}'),
-                    pw.Text(
-                      'Total: Rp ${order['total_amount']}',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16),
-                    ),
-                  ],
-                ),
+              ListTile(
+                title: const Text('Shipped'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  updateOrderStatus(order['id'].toString(), 'shipped');
+                },
               ),
-              pw.SizedBox(height: 40),
-              pw.Center(
-                child: pw.Text(
-                  'Terima kasih atas pembelian Anda!',
-                  style: pw.TextStyle(fontStyle: pw.FontStyle.italic),
-                ),
+              ListTile(
+                title: const Text('Complete'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  updateOrderStatus(order['id'].toString(), 'complete');
+                },
+              ),
+              ListTile(
+                title: const Text('Cancelled'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  updateOrderStatus(order['id'].toString(), 'cancelled');
+                },
               ),
             ],
-          );
-        },
-      ),
-    );
-
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Batal'),
+            ),
+          ],
+        );
+      },
     );
   }
 
