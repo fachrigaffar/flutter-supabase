@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'pages/splash_page.dart';
-import 'pages/login_page.dart';
-import 'pages/register_page.dart';
-import 'pages/dashboard_page.dart';
-import 'pages/admin_login_page.dart';
-import 'pages/admin_dashboard_page.dart';
+import 'screens/splash_page.dart';
+import 'screens/login_page.dart';
+import 'screens/register_page.dart';
+import 'screens/dashboard_page.dart';
+import 'screens/admin_login_page.dart';
+import 'screens/admin_dashboard_page.dart';
 import 'providers/cart_provider.dart';
 
 Future<void> main() async {

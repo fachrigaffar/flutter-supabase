@@ -1,18 +1,5 @@
 import 'package:flutter/foundation.dart';
-
-class CartItem {
-  final Map<String, dynamic> product;
-  int quantity;
-  final int price;
-
-  CartItem({
-    required this.product,
-    required this.quantity,
-    required this.price,
-  });
-
-  int get subtotal => quantity * price;
-}
+import '../models/cart_item.dart';
 
 class CartProvider extends ChangeNotifier {
   final List<CartItem> _items = [];
